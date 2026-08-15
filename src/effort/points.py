@@ -16,11 +16,25 @@ import math
 import pandas as pd
 
 POINTS_CONFIG = {
-    # Base rate: this many minutes earns one point, before effort is applied.
+    # Base rate: this many minutes earns one point, before the multiplier.
     "minutes_per_point": 5,
 
-    # "How hard I had to try", 1-3, multiplying the points for that entry.
-    "effort_multipliers": {1: 1.0, 2: 1.25, 3: 1.5},
+    # What an entry is worth per minute, decided by the *kind* of thing it was
+    # rather than by a self-rating. She no longer has to judge her own effort;
+    # the rate is agreed once, here, and applies the same way every time.
+    "category_multipliers": {
+        "School Work": 1.0,
+        "Tuition": 1.25,
+        "Chores": 1.25,
+        "Sports": 1.5,
+        "Painting": 2.0,
+        "Reading book": 2.0,
+        "Science with Appa": 2.0,
+    },
+
+    # Used if a category somehow has no rate of its own. Never rewards more
+    # than the agreed rates, and never zero, so an entry always counts.
+    "default_multiplier": 1.0,
 
     # The most minutes of one activity that can count towards points in a
     # single day. Longer is fine and still shows in the charts — it just stops
@@ -115,7 +129,12 @@ def score_entries(valid: pd.DataFrame, config: dict = POINTS_CONFIG) -> pd.DataF
     allowance = (cap - already_counted).clip(lower=0)
 
     scored["countable_minutes"] = scored["minutes"].where(scored["minutes"] < allowance, allowance).astype("int64")
-    scored["multiplier"] = scored["effort"].map(config["effort_multipliers"]).astype("float64")
+    scored["multiplier"] = (
+        scored["category"]
+        .map(config["category_multipliers"])
+        .fillna(config.get("default_multiplier", 1.0))
+        .astype("float64")
+    )
 
     raw = scored["countable_minutes"] / config["minutes_per_point"] * scored["multiplier"]
     scored["points"] = raw.map(_round_half_up).astype("int64")
@@ -283,27 +302,28 @@ def rules_markdown(config: dict = POINTS_CONFIG) -> str:
     """The "How points work" text, built from the config so it cannot go stale."""
     per_point = config["minutes_per_point"]
     cap = config["daily_activity_cap_minutes"]
-    multipliers = config["effort_multipliers"]
+    multipliers = config["category_multipliers"]
     bonuses = config["bonuses"]
 
     example_minutes = 30
-    example_lines = []
-    for effort in sorted(multipliers):
-        earned = _round_half_up(example_minutes / per_point * multipliers[effort])
-        example_lines.append(
-            f"| {effort} | ×{multipliers[effort]:g} | {example_minutes} minutes → **{earned} points** |"
-        )
+    # Best-paying first, so the answer to "what's worth most?" is the top row.
+    ordered = sorted(multipliers.items(), key=lambda pair: (-pair[1], pair[0]))
+    example_lines = [
+        f"| {name} | ×{rate:g} | {example_minutes} minutes → "
+        f"**{_round_half_up(example_minutes / per_point * rate)} points** |"
+        for name, rate in ordered
+    ]
 
     days = bonuses["distinct_days"]
     categories = bonuses["distinct_categories"]
 
     return f"""
-**Every {per_point} minutes you work is worth 1 point.**
+**Every {per_point} minutes you spend is worth 1 point.**
 
-Then your effort rating changes how much that's worth. Effort is how hard you
-had to try — not how well it went, and not what mark you got.
+Then the *kind* of thing it was decides what those minutes are worth. You don't
+have to rate yourself — the rate is the same every time, and you can see it here.
 
-| Effort | Worth | For example |
+| What you did | Worth | For example |
 | --- | --- | --- |
 {chr(10).join(example_lines)}
 

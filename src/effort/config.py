@@ -12,22 +12,26 @@ DATA_DIR = REPO_ROOT / "data"
 SAMPLE_LOG = DATA_DIR / "sample_effort_log.csv"
 # Her real log, if it exists, is preferred over the sample. Gitignored, like
 # every CSV that is not the sample.
-LIVE_LOG = DATA_DIR / "effort_log.csv"
+LIVE_LOG = DATA_DIR / "Efforts_Logged.csv"
 REWARDS_JSON = DATA_DIR / "rewards.json"
 LEDGER_CSV = DATA_DIR / "ledger.csv"
 
 COLUMNS = ("date", "activity", "category", "minutes", "effort", "notes")
-OPTIONAL_COLUMNS = ("notes",)
+# Effort is optional: points come from the category now, so a blank effort cell
+# is not a mistake. The column is still read and kept, just not scored.
+OPTIONAL_COLUMNS = ("notes", "effort")
 
+# The category is the *type* of thing it was; the activity is what she actually
+# did ("Swimming", "Geography"). The multiplier attaches to the category, so
+# this list and POINTS_CONFIG["category_multipliers"] must stay in step.
 CATEGORIES = (
-    "Maths",
-    "English",
-    "Science",
-    "Reading",
-    "Music",
-    "Sport",
+    "School Work",
+    "Tuition",
+    "Sports",
     "Chores",
-    "Other",
+    "Painting",
+    "Reading book",
+    "Science with Appa",
 )
 
 EFFORT_LEVELS = (1, 2, 3)

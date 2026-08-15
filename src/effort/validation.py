@@ -24,7 +24,9 @@ VALID_DTYPES = {
     "activity": "string",
     "category": "string",
     "minutes": "int64",
-    "effort": "int64",
+    # Nullable: points come from the category now, so effort may be blank. It is
+    # kept because it is still interesting to look back on, not because it scores.
+    "effort": "Int64",
     "notes": "string",
 }
 
@@ -133,12 +135,11 @@ def validate(raw: pd.DataFrame) -> ValidationResult:
         elif minutes > MAX_SENSIBLE_MINUTES:
             faults.append(f"{minutes} minutes is longer than a day. Check for a typo.")
 
+        # Effort no longer earns anything, so it can never make a row invalid.
+        # Anything that isn't a plain 1-3 is simply recorded as blank.
         effort = parse_int(row["effort"])
-        if effort is None or effort not in EFFORT_LEVELS:
-            shown = str(row["effort"]).strip() or "(empty)"
-            faults.append(
-                f'Effort is "{shown}". It has to be 1, 2 or 3 — how hard she had to try.'
-            )
+        if effort not in EFFORT_LEVELS:
+            effort = None
 
         if faults:
             for fault in faults:
@@ -155,7 +156,7 @@ def validate(raw: pd.DataFrame) -> ValidationResult:
             "activity": activity,
             "category": category,
             "minutes": minutes,
-            "effort": effort,
+            "effort": pd.NA if effort is None else effort,
             "notes": str(row["notes"]).strip(),
         })
 

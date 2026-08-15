@@ -3,6 +3,49 @@
 Built in phases. Phases 2-6 were run straight through on request rather than
 stopping after each one.
 
+## Points come from the category, not from a self-rating
+
+Effort is no longer keyed in. What an entry is worth per minute is now decided
+by the *kind* of thing it was, at rates agreed once in `POINTS_CONFIG`.
+
+**Why this was more than a config change.** The real log
+(`data/Efforts_Logged.csv`) uses the columns the opposite way round to the
+original assumption: `activity` holds the subject ("Swimming", "Geography") and
+`category` holds the type of thing it is. Hers is the better scheme — the
+multiplier belongs on the type — but it meant the whole category list was wrong.
+Before this change, **every row of her real log was rejected** as an unknown
+category.
+
+- `config.py` — categories are now School Work, Tuition, Sports, Chores,
+  Painting, Reading book, Science with Appa. `LIVE_LOG` points at
+  `Efforts_Logged.csv`.
+- `points.py` — `effort_multipliers` becomes `category_multipliers`
+  (School Work ×1, Tuition ×1.25, Chores ×1.25, Sports ×1.5, Painting ×2,
+  Reading book ×2, Science with Appa ×2), plus a `default_multiplier` of 1.0 so
+  an unrecognised category can never score zero.
+- `validation.py` — effort is optional and can no longer invalidate a row.
+  Anything that isn't a plain 1-3 is recorded as blank. The column is still read
+  and kept, because it is interesting to look back on; it just does not score.
+- The sample log was regenerated in the new scheme — it would otherwise have
+  been 100% invalid — and one of its deliberately-broken rows was replaced,
+  since a bad effort value is no longer a fault.
+- Tests updated and extended to 39: one case per category rate, one asserting
+  effort no longer moves the points at all (including blank), and one asserting
+  an unknown category falls back rather than scoring zero.
+
+**Known consequence.** Her log records reading under the category `Leisure`,
+which is not on the agreed list, so those rows now land in the problems panel.
+Either rename them in the sheet to `Reading book`, or add `"Leisure"` to
+`category_multipliers` and `CATEGORIES`. 11 of her 13 rows score; those 2 don't.
+
+**Fixed while re-checking the screenshots.** The category breakdown chart had
+silently gone alphabetical: `sort="-x"` stops resolving once the chart is
+layered with a `Step` height, which buried the biggest bar in the middle. The
+order is now pinned to the frame explicitly.
+
+**Screenshots** were taken with the real log moved aside, so `docs/*.png` in the
+public repo show only generated sample data.
+
 ## Phase 6 — polish
 
 - `.streamlit/config.toml` sets the app surfaces to the same colours the charts

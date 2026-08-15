@@ -3,9 +3,10 @@
 A small Streamlit app for logging schoolwork and activities each week and turning
 them into points that can be spent on rewards.
 
-It rewards **effort and consistency, not marks**. Effort is a self-rating of *how
-hard I had to try* — a 30-minute maths sheet that felt brutal is worth more than
-one that was easy. Points are never negative and are never taken away.
+It rewards **doing the thing and keeping it up, not marks**. What an entry is
+worth per minute depends on the *kind* of thing it was — the rates are agreed
+once and written down, so there's no self-rating to argue about and nothing to
+judge in the moment. Points are never negative and are never taken away.
 
 ![This Week](docs/this-week.png)
 
@@ -27,16 +28,16 @@ uv run pytest
 
 ## The log
 
-The app reads `data/effort_log.csv` if it exists, and falls back to the sample
-that ships with the repo (`data/sample_effort_log.csv`). Columns:
+The app reads `data/Efforts_Logged.csv` if it exists, and falls back to the
+sample that ships with the repo (`data/sample_effort_log.csv`). Columns:
 
 | Column | Meaning |
 | --- | --- |
 | `date` | `2026-08-15` or `15/08/2026` — day-first, not month-first |
-| `activity` | What she actually did, e.g. "Maths homework" |
-| `category` | One of Maths, English, Science, Reading, Music, Sport, Chores, Other |
+| `activity` | What she actually did, e.g. "Swimming", "Geography" |
+| `category` | The *kind* of thing it was. This is what earns the multiplier. One of School Work, Tuition, Sports, Chores, Painting, Reading book, Science with Appa |
 | `minutes` | A whole number above 0 |
-| `effort` | 1, 2 or 3 — how hard she had to try |
+| `effort` | Optional and no longer scored. May be blank, or left out entirely |
 | `notes` | Optional, may be empty |
 
 Rows that don't fit are never fatal. They're set aside, counted separately, and
@@ -54,16 +55,20 @@ uv run python scripts/check_data.py path/to/log.csv
 <!-- points-rules:start -->
 <!-- Generated from POINTS_CONFIG. Run: uv run python scripts/update_readme.py -->
 
-**Every 5 minutes you work is worth 1 point.**
+**Every 5 minutes you spend is worth 1 point.**
 
-Then your effort rating changes how much that's worth. Effort is how hard you
-had to try — not how well it went, and not what mark you got.
+Then the *kind* of thing it was decides what those minutes are worth. You don't
+have to rate yourself — the rate is the same every time, and you can see it here.
 
-| Effort | Worth | For example |
+| What you did | Worth | For example |
 | --- | --- | --- |
-| 1 | ×1 | 30 minutes → **6 points** |
-| 2 | ×1.25 | 30 minutes → **8 points** |
-| 3 | ×1.5 | 30 minutes → **9 points** |
+| Painting | ×2 | 30 minutes → **12 points** |
+| Reading book | ×2 | 30 minutes → **12 points** |
+| Science with Appa | ×2 | 30 minutes → **12 points** |
+| Sports | ×1.5 | 30 minutes → **9 points** |
+| Chores | ×1.25 | 30 minutes → **8 points** |
+| Tuition | ×1.25 | 30 minutes → **8 points** |
+| School Work | ×1 | 30 minutes → **6 points** |
 
 **Two bonuses, each worth 10 points, for whole weeks:**
 

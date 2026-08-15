@@ -2,6 +2,9 @@
 
 Six weeks of plausible entries for a 12-year-old, ending Sat 2026-08-15, plus a
 handful of deliberately broken rows so the validation panel has something to show.
+
+The shape follows the real log: `activity` is what she did (Swimming, Geography)
+and `category` is the kind of thing it was, which is what earns the multiplier.
 """
 
 import csv
@@ -14,29 +17,28 @@ TODAY = date(2026, 8, 15)  # Saturday
 WEEKS = 6
 
 ACTIVITIES = {
-    "Maths": ["Maths homework", "Times tables practice", "Maths worksheet"],
-    "English": ["English essay draft", "Spelling practice", "Book report"],
-    "Science": ["Science project", "Science homework"],
-    "Reading": ["Read novel", "Reading before bed"],
-    "Music": ["Piano practice", "Recorder practice"],
-    "Sport": ["Netball training", "Swimming lesson", "Bike ride"],
+    "School Work": ["Geography", "English", "Maths", "Science", "History"],
+    "Tuition": ["Maths", "English"],
+    "Sports": ["Swimming", "Netball", "Bike ride"],
     "Chores": ["Tidy room", "Dishes", "Walk the dog"],
-    "Other": ["Coding club", "Art"],
+    "Painting": ["Watercolours", "Sketching"],
+    "Reading book": ["Reading"],
+    "Science with Appa": ["Volcano experiment", "Star gazing", "Circuit kit"],
 }
 
 NOTES = [
     "", "", "", "", "",
+    "Assignment",
+    "Homework",
     "tricky bits at the end",
-    "got stuck on question 4",
-    "easier than last time",
     "did it without being asked",
     "really did not feel like it",
     "finished the whole chapter",
     "coach said good effort",
 ]
 
-SCHOOL_NIGHT = ["Maths", "English", "Reading", "Music", "Science"]
-WEEKEND = ["Sport", "Chores", "Reading", "Other", "Music"]
+SCHOOL_NIGHT = ["School Work", "Tuition", "Reading book", "Chores", "Painting"]
+WEEKEND = ["Sports", "Chores", "Reading book", "Painting", "Science with Appa"]
 
 
 def make_row(rng, day, category):
@@ -45,6 +47,8 @@ def make_row(rng, day, category):
         "activity": rng.choice(ACTIVITIES[category]),
         "category": category,
         "minutes": str(rng.choice([10, 15, 20, 25, 30, 30, 40, 45, 50, 60, 75, 90])),
+        # Still written, still ignored by the engine. Kept so the column stays
+        # readable and so old logs and new ones look the same.
         "effort": str(rng.choices([1, 2, 3], weights=[3, 4, 3])[0]),
         "notes": rng.choice(NOTES),
     }
@@ -84,34 +88,37 @@ def main():
     # in the data rather than only in the tests.
     cap_day = this_monday - timedelta(days=6)  # the Tuesday of last week
     rows.append({
-        "date": cap_day.isoformat(), "activity": "Maths homework", "category": "Maths",
-        "minutes": "45", "effort": "2", "notes": "long division",
+        "date": cap_day.isoformat(), "activity": "Maths", "category": "Tuition",
+        "minutes": "45", "effort": "2", "notes": "Homework",
     })
     rows.append({
-        "date": cap_day.isoformat(), "activity": "Maths homework", "category": "Maths",
+        "date": cap_day.isoformat(), "activity": "Maths", "category": "Tuition",
         "minutes": "40", "effort": "3", "notes": "kept going after dinner",
     })
 
     rows.sort(key=lambda r: r["date"])
 
     # Deliberately broken rows, scattered through the file. Each one exercises a
-    # different validation rule. They must never crash the app.
+    # different validation rule. They must never crash the app. Note that a bad
+    # effort value is NOT here: effort no longer earns points, so it can no
+    # longer invalidate a row.
     broken = [
-        (8, {"date": "2026-07-14", "activity": "Piano practice", "category": "Music",
-             "minutes": "30", "effort": "5", "notes": "effort out of range"}),
-        (17, {"date": "2026-07-20", "activity": "Maths homework", "category": "Maths",
+        (8, {"date": "2026-07-14", "activity": "Swimming", "category": "Sports",
+             "minutes": "2000", "effort": "2", "notes": "longer than a day"}),
+        (17, {"date": "2026-07-20", "activity": "Maths", "category": "Tuition",
               "minutes": "abc", "effort": "2", "notes": "minutes not a number"}),
-        (26, {"date": "2026-07-27", "activity": "Science homework", "category": "Mathematics",
+        (26, {"date": "2026-07-27", "activity": "Reading", "category": "Leisure",
               "minutes": "25", "effort": "2", "notes": "category not on the list"}),
-        (34, {"date": "", "activity": "Read novel", "category": "Reading",
+        (34, {"date": "", "activity": "Reading", "category": "Reading book",
               "minutes": "20", "effort": "1", "notes": "no date"}),
-        (41, {"date": "2026-08-03", "activity": "Bike ride", "category": "Sport",
+        (41, {"date": "2026-08-03", "activity": "Bike ride", "category": "Sports",
               "minutes": "-30", "effort": "2", "notes": "negative minutes"}),
         (48, {"date": "2026-08-06", "activity": "", "category": "Chores",
               "minutes": "15", "effort": "1", "notes": "no activity name"}),
-        # Not broken: an Australian-format date, to prove the loader is tolerant.
+        # Not broken, both on purpose: an Australian-format date, and a blank
+        # effort — which is now perfectly normal.
         (52, {"date": "07/08/2026", "activity": "Walk the dog", "category": "Chores",
-              "minutes": "20", "effort": "1", "notes": "day-first date"}),
+              "minutes": "20", "effort": "", "notes": "day-first date, no effort"}),
     ]
     for index, row in broken:
         rows.insert(min(index, len(rows)), row)

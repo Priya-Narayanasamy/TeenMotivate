@@ -53,9 +53,13 @@ def _breakdown_chart(breakdown: pd.DataFrame) -> alt.LayerChart:
     ink = theme.chrome()
 
     base = alt.Chart(breakdown).encode(
+        # The order is pinned to the frame, which category_breakdown already
+        # sorts by points. sort="-x" silently falls back to alphabetical once
+        # the chart is layered, which buries the biggest bar in the middle.
+        #
         # labelOverlap=False so every category keeps its name — the labels are
         # what carry identity here, with colour only echoing them.
-        y=alt.Y("category:N", sort="-x", title=None,
+        y=alt.Y("category:N", sort=list(breakdown["category"]), title=None,
                 axis=alt.Axis(labelFontSize=12, labelPadding=8, ticks=False,
                               domain=False, labelOverlap=False)),
         x=alt.X("points:Q", title="Points", axis=alt.Axis(tickCount=4, grid=True)),

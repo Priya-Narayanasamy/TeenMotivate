@@ -36,7 +36,7 @@ def make_log(rows):
     return frame.astype(VALID_DTYPES)
 
 
-def entry(date, activity="Maths homework", category="Maths", minutes=30, effort=1, notes=""):
+def entry(date, activity="Geography", category="School Work", minutes=30, effort=1, notes=""):
     return {
         "date": pd.Timestamp(date),
         "activity": activity,
@@ -55,31 +55,31 @@ def test_chosen_dates_are_the_weekdays_the_tests_assume():
 # --- the 60-minute cap ------------------------------------------------------
 
 def test_single_activity_caps_at_sixty_minutes():
-    log = make_log([entry(MONDAY, minutes=90, effort=1)])
+    log = make_log([entry(MONDAY, minutes=90)])
     scored = score_entries(log)
 
     assert scored.loc[0, "countable_minutes"] == 60
     assert scored.loc[0, "minutes"] == 90, "the logged minutes are left alone"
-    assert scored.loc[0, "points"] == 12  # 60 / 5 * 1.0
+    assert scored.loc[0, "points"] == 12  # 60 / 5 * 1.0 (School Work)
 
 
 def test_two_sessions_of_the_same_activity_share_one_daily_cap():
     log = make_log([
-        entry(MONDAY, activity="Maths homework", minutes=45, effort=2),
-        entry(MONDAY, activity="Maths homework", minutes=40, effort=3),
+        entry(MONDAY, activity="Maths", category="Tuition", minutes=45),
+        entry(MONDAY, activity="Maths", category="Tuition", minutes=40),
     ])
     scored = score_entries(log)
 
     # The earlier session fills the allowance first: 45, then 15 of the 40.
     assert list(scored["countable_minutes"]) == [45, 15]
     assert scored["countable_minutes"].sum() == 60
-    assert list(scored["points"]) == [11, 5]  # 45/5*1.25 = 11.25 -> 11; 15/5*1.5 = 4.5 -> 5
+    assert list(scored["points"]) == [11, 4]  # 45/5*1.25 = 11.25 -> 11; 15/5*1.25 = 3.75 -> 4
 
 
 def test_the_cap_is_per_activity_not_per_day():
     log = make_log([
-        entry(MONDAY, activity="Maths homework", category="Maths", minutes=90),
-        entry(MONDAY, activity="Piano practice", category="Music", minutes=90),
+        entry(MONDAY, activity="Geography", category="School Work", minutes=90),
+        entry(MONDAY, activity="Swimming", category="Sports", minutes=90),
     ])
     scored = score_entries(log)
 
@@ -98,35 +98,59 @@ def test_the_cap_resets_the_next_day():
 
 def test_the_same_activity_typed_differently_still_shares_the_cap():
     log = make_log([
-        entry(MONDAY, activity="Maths homework", minutes=45),
-        entry(MONDAY, activity="maths homework ", minutes=45),
+        entry(MONDAY, activity="Geography", minutes=45),
+        entry(MONDAY, activity="geography ", minutes=45),
     ])
     scored = score_entries(log)
 
     assert scored["countable_minutes"].sum() == 60
 
 
-# --- effort multipliers and rounding ---------------------------------------
+# --- category multipliers and rounding -------------------------------------
 
 @pytest.mark.parametrize(
-    "effort,expected",
-    [(1, 6), (2, 8), (3, 9)],  # 30 min: 6.0, 7.5 -> 8, 9.0
+    "category,expected",
+    [
+        ("School Work", 6),         # 30/5 * 1.0
+        ("Tuition", 8),             # 30/5 * 1.25 = 7.5 -> 8
+        ("Chores", 8),              # 30/5 * 1.25 = 7.5 -> 8
+        ("Sports", 9),              # 30/5 * 1.5
+        ("Painting", 12),           # 30/5 * 2.0
+        ("Reading book", 12),
+        ("Science with Appa", 12),
+    ],
 )
-def test_effort_multiplies_the_points(effort, expected):
-    scored = score_entries(make_log([entry(MONDAY, minutes=30, effort=effort)]))
+def test_the_category_decides_the_multiplier(category, expected):
+    scored = score_entries(make_log([entry(MONDAY, category=category, minutes=30)]))
     assert scored.loc[0, "points"] == expected
 
 
+def test_effort_no_longer_changes_anything():
+    """The same entry scores the same whatever effort says, including blank."""
+    scores = [
+        score_entries(make_log([entry(MONDAY, minutes=30, effort=value)])).loc[0, "points"]
+        for value in (1, 2, 3, pd.NA)
+    ]
+    assert len(set(scores)) == 1, f"effort still moves the points: {scores}"
+
+
+def test_an_unknown_category_falls_back_rather_than_scoring_zero():
+    # Validation keeps unknown categories out, but the engine must not produce
+    # a zero if one ever reaches it.
+    scored = score_entries(make_log([entry(MONDAY, category="Something New", minutes=30)]))
+    assert scored.loc[0, "points"] == 6  # the default multiplier of 1.0
+
+
 def test_halves_round_up_not_to_even():
-    # 10 minutes at effort 2 is exactly 2.5 points. Python's round() would give
+    # 10 minutes of Tuition is exactly 2.5 points. Python's round() would give
     # 2 here; she gets 3.
-    scored = score_entries(make_log([entry(MONDAY, minutes=10, effort=2)]))
+    scored = score_entries(make_log([entry(MONDAY, category="Tuition", minutes=10)]))
     assert scored.loc[0, "points"] == 3
 
 
 # --- the two weekly bonuses -------------------------------------------------
 
-def days_log(day_count, categories=("Maths",)):
+def days_log(day_count, categories=("School Work",)):
     rows = []
     for offset in range(day_count):
         category = categories[offset % len(categories)]
@@ -149,8 +173,8 @@ def test_five_distinct_days_earns_the_spread_out_bonus():
 
 
 def test_three_distinct_categories_earns_the_mix_it_up_bonus():
-    two = weekly_totals(days_log(2, ("Maths", "English"))).iloc[0]
-    three = weekly_totals(days_log(3, ("Maths", "English", "Sport"))).iloc[0]
+    two = weekly_totals(days_log(2, ("School Work", "Tuition"))).iloc[0]
+    three = weekly_totals(days_log(3, ("School Work", "Tuition", "Sports"))).iloc[0]
 
     assert not two["distinct_categories_bonus"]
     assert three["distinct_categories_bonus"]
@@ -158,7 +182,7 @@ def test_three_distinct_categories_earns_the_mix_it_up_bonus():
 
 
 def test_both_bonuses_stack():
-    week = weekly_totals(days_log(5, ("Maths", "English", "Sport"))).iloc[0]
+    week = weekly_totals(days_log(5, ("School Work", "Tuition", "Sports"))).iloc[0]
 
     assert week["distinct_days_bonus"]
     assert week["distinct_categories_bonus"]
@@ -167,7 +191,7 @@ def test_both_bonuses_stack():
 
 
 def test_repeating_one_category_over_five_days_earns_only_the_day_bonus():
-    week = weekly_totals(days_log(5, ("Maths",))).iloc[0]
+    week = weekly_totals(days_log(5, ("School Work",))).iloc[0]
 
     assert week["distinct_days_bonus"]
     assert not week["distinct_categories_bonus"]
@@ -176,9 +200,9 @@ def test_repeating_one_category_over_five_days_earns_only_the_day_bonus():
 
 def test_several_entries_on_one_day_are_still_one_distinct_day():
     log = make_log([
-        entry(MONDAY, activity="Maths homework", category="Maths"),
-        entry(MONDAY, activity="Read novel", category="Reading"),
-        entry(MONDAY, activity="Piano practice", category="Music"),
+        entry(MONDAY, activity="Geography", category="School Work"),
+        entry(MONDAY, activity="Reading", category="Reading book"),
+        entry(MONDAY, activity="Swimming", category="Sports"),
     ])
     week = weekly_totals(log).iloc[0]
 
@@ -259,7 +283,7 @@ def test_an_empty_week_still_reports_what_is_needed_for_the_bonuses():
 
 
 def test_an_empty_week_after_a_good_one_shows_a_negative_delta_but_never_negative_points():
-    log = days_log(5, ("Maths", "English", "Sport"))  # week of 2026-08-10
+    log = days_log(5, ("School Work", "Tuition", "Sports"))  # week of 2026-08-10
     summary = week_summary(log, "2026-08-17")  # the week after, empty
 
     assert summary["total_points"] == 0
@@ -271,7 +295,7 @@ def test_an_empty_week_after_a_good_one_shows_a_negative_delta_but_never_negativ
 # --- a single-row dataset ---------------------------------------------------
 
 def test_a_single_row_is_enough_to_run_everything():
-    log = make_log([entry(MONDAY, category="Maths", minutes=30, effort=2)])
+    log = make_log([entry(MONDAY, category="Tuition", minutes=30)])
 
     scored = score_entries(log)
     assert len(scored) == 1
@@ -291,7 +315,7 @@ def test_a_single_row_is_enough_to_run_everything():
 
     breakdown = category_breakdown(log, MONDAY)
     assert len(breakdown) == 1
-    assert breakdown.loc[0, "category"] == "Maths"
+    assert breakdown.loc[0, "category"] == "Tuition"
     assert breakdown.loc[0, "points"] == 8
 
     assert total_earned(log) == 8
