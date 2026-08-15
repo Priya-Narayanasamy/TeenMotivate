@@ -30,6 +30,7 @@ POINTS_CONFIG = {
         "Painting": 2.0,
         "Reading book": 2.0,
         "Science with Appa": 2.0,
+        "Piano": 2.0,
     },
 
     # Used if a category somehow has no rate of its own. Never rewards more

@@ -11,17 +11,12 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from ..config import LIVE_LOG, SAMPLE_LOG
-from ..loading import LogFileError, load_log
+from ..config import SAMPLE_LOG
+from ..loading import LogFileError, active_log_path, load_log
 from ..points import POINTS_CONFIG, rules_markdown
 from ..validation import validate
 
 DAY_NAMES = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-
-
-def active_log_path() -> Path:
-    """Her real log if she has one, otherwise the sample that ships with the repo."""
-    return LIVE_LOG if LIVE_LOG.exists() else SAMPLE_LOG
 
 
 @st.cache_data(show_spinner=False)

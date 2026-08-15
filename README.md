@@ -63,6 +63,7 @@ have to rate yourself — the rate is the same every time, and you can see it he
 | What you did | Worth | For example |
 | --- | --- | --- |
 | Painting | ×2 | 30 minutes → **12 points** |
+| Piano | ×2 | 30 minutes → **12 points** |
 | Reading book | ×2 | 30 minutes → **12 points** |
 | Science with Appa | ×2 | 30 minutes → **12 points** |
 | Sports | ×1.5 | 30 minutes → **9 points** |

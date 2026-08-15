@@ -10,6 +10,7 @@ before it. The first test asserts that, so the rest can rely on it.
 import pandas as pd
 import pytest
 
+from effort.config import CATEGORIES
 from effort.points import (
     POINTS_CONFIG,
     category_breakdown,
@@ -45,6 +46,21 @@ def entry(date, activity="Geography", category="School Work", minutes=30, effort
         "effort": effort,
         "notes": notes,
     }
+
+
+def test_every_category_has_a_rate_and_every_rate_has_a_category():
+    """The two lists must agree, or a category silently stops working.
+
+    CATEGORIES is what validation accepts; category_multipliers is what the
+    engine pays. Adding a new activity means editing both — miss one and either
+    the rows are rejected despite having a rate, or a category is accepted and
+    quietly paid the default.
+    """
+    accepted = set(CATEGORIES)
+    priced = set(POINTS_CONFIG["category_multipliers"])
+
+    assert accepted - priced == set(), "accepted but has no rate of its own"
+    assert priced - accepted == set(), "has a rate but validation will reject it"
 
 
 def test_chosen_dates_are_the_weekdays_the_tests_assume():

@@ -3,6 +3,19 @@
 Built in phases. Phases 2-6 were run straight through on request rather than
 stopping after each one.
 
+## Piano, and one place to decide which file is "the" log
+
+- Added `Piano` at ×2.0. It needed adding in **two** places — `CATEGORIES` in
+  `config.py` (what validation accepts) and `category_multipliers` in
+  `points.py` (what the engine pays). It went in with only the rate at first,
+  which meant Piano rows kept being rejected while quietly having a price.
+  There is now a test asserting the two lists agree, so the next new activity
+  fails loudly at `pytest` rather than silently in the app.
+- `scripts/check_data.py` defaulted to the *sample* while the app read her real
+  log, so it could report on the wrong file entirely. The choice now lives in
+  `loading.active_log_path()` and both callers use it.
+- With those in, her log reads 53 of 53 rows with no problems.
+
 ## Points come from the category, not from a self-rating
 
 Effort is no longer keyed in. What an entry is worth per minute is now decided

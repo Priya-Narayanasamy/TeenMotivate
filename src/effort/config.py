@@ -32,6 +32,7 @@ CATEGORIES = (
     "Painting",
     "Reading book",
     "Science with Appa",
+    "Piano",
 )
 
 EFFORT_LEVELS = (1, 2, 3)

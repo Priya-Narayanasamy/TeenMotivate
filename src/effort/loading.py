@@ -13,11 +13,21 @@ from pathlib import Path
 
 import pandas as pd
 
-from .config import COLUMNS, OPTIONAL_COLUMNS
+from .config import COLUMNS, LIVE_LOG, OPTIONAL_COLUMNS, SAMPLE_LOG
 
 
 class LogFileError(Exception):
     """The file as a whole cannot be used. The message is shown to the user."""
+
+
+def active_log_path() -> Path:
+    """Her real log if she has one, otherwise the sample that ships with the repo.
+
+    Lives here so the app and the command line agree on which file is "the"
+    log. They used to decide separately, which meant `check_data.py` could
+    quietly report on the sample while the app was showing her real data.
+    """
+    return LIVE_LOG if LIVE_LOG.exists() else SAMPLE_LOG
 
 
 def load_log(path: str | Path) -> pd.DataFrame:

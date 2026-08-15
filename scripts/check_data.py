@@ -8,13 +8,13 @@ There is no UI yet — this is how you see phase 1 doing its job.
 
 import sys
 
-from effort.config import SAMPLE_LOG
-from effort.loading import LogFileError, load_log
+from effort.loading import LogFileError, active_log_path, load_log
 from effort.validation import validate
 
 
 def main() -> int:
-    path = sys.argv[1] if len(sys.argv) > 1 else SAMPLE_LOG
+    # Same file the app would read, so the two can't disagree.
+    path = sys.argv[1] if len(sys.argv) > 1 else active_log_path()
 
     try:
         raw = load_log(path)
