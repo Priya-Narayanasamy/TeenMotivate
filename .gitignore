@@ -1,0 +1,29 @@
+# This repo is public. Her real data must never be committable.
+#
+# Everything CSV is ignored, then the one sample file is allowed back in.
+# Order matters: the negation has to come after the wildcard, and the
+# belt-and-braces lines for her live files come after the negation.
+*.csv
+!data/sample_effort_log.csv
+
+data/ledger.csv
+data/rewards.json
+
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
